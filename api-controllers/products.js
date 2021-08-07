@@ -4,13 +4,11 @@ const client = new Client({
 });
 const fs = require('fs');
 require('path');
-const productsData = JSON.parse(fs.readFileSync('./assets/elastic-data.json', 'utf8'));
+JSON.parse(fs.readFileSync('./assets/elastic-data.json', 'utf8'));
 const {
     response
 } = require('express');
-
-const colorEnum = require('../utils/ColorEnum');
-
+require('../utils/ColorEnum');
 const parseResult = (result) => {
     let parsedResult = [];
     const searchHits = result.body.hits.hits;
@@ -58,8 +56,29 @@ const dashboardProducts = async (req, res = response) => {
     let parsedResult = parseResult(result);
     res.json(parsedResult);
 }
+const findProductById = async (req, res = response) => {
+    const params = req.params;
+    const productId = params.productId;
 
+    const result = await client.search({
+        index: 'catalog',
+        body: {
+            from: 0,
+            size: 10,
+            query: {
+                match: {
+                    productId: {
+                        query: productId
+                    }
+                }
+            }
+        }
+    })
+    let parsedResult = parseResult(result);
+    res.json(parsedResult);
+};
 module.exports = {
     findProductsFromCatalog,
-    dashboardProducts
+    dashboardProducts,
+    findProductById
 }

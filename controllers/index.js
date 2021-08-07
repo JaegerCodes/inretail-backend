@@ -1,5 +1,5 @@
-const healthyCheck = async(req, res = response ) => {
-    var healthyMessage = {status: "Service is healthy"};
+const healthyCheck = async (req, res = response) => {
+    let healthyMessage = {status: "Service is healthy"};
     res.status(200).json(healthyMessage);
 }
 

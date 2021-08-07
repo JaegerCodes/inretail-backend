@@ -1,7 +1,7 @@
 const {
     response
 } = require('express');
-var axios = require('axios').default;
+let axios = require('axios').default;
 const {
     Client
 } = require('@elastic/elasticsearch')
@@ -29,7 +29,7 @@ const loadProducts = async (req, res = response) => {
 
     const fashionCat = 504
     const groupSize = 50
-    const eindex = 'catalog'
+    const eIndex = 'catalog'
 
     const client = new Client({
         node: process.env.ELASTIC_SEARCH_URL
@@ -89,7 +89,7 @@ const loadProducts = async (req, res = response) => {
 
         const body = parsedList.flatMap(doc => [{
             index: {
-                _index: eindex
+                _index: eIndex
             }
         }, doc])
 
@@ -103,7 +103,7 @@ const loadProducts = async (req, res = response) => {
         const {
             body: count
         } = await client.count({
-            index: eindex
+            index: eIndex
         })
 
         if (bulkResponse.errors) {
