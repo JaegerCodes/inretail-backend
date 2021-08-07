@@ -13,31 +13,23 @@ var axios = require('axios').default;
 const findProductsFromCatalog = async (req, res = response ) => {
 
     const { searchWord } = req.query;
-    var products = {};
 
-    await axios({
-        method: 'get',
-        url: process.env.ELASTIC_SEARCH_URL + "/catalog/_search",
-        data: { 
-            query: {
-            match: {
+    const result = await client.search({
+        index: 'catalog',
+        body: {
+          query: {
+            match: { 
                 productName: {
                     query: searchWord,
                     fuzziness: "AUTO",
                     analyzer: "spanish_analyzer"
                 }
-            } 
+            }
+          }
         }
-    }
-    }).then(response => {
-            products = response.data
-        })
-        .catch(error => {
-            res.status(500)
-            console.error(error)
-        });
+    })
 
-    res.json(products)
+    res.json(result)
 
 };
 
