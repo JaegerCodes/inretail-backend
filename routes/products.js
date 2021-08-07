@@ -8,7 +8,7 @@ const {
 
 const {
     findProductsFromCatalog,
-    loadProductsIntoCatalog
+    dashboardProducts
 } = require('../api-controllers/products');
 
 const router = Router();
@@ -18,6 +18,6 @@ router.get('/', getProducts);
 router.get('/load', loadProducts);
 
 router.get('/catalog', findProductsFromCatalog);
-router.get('/loadIntoCatalog', loadProductsIntoCatalog);
+router.get('/dashboard', dashboardProducts);
 
 module.exports = router;
