@@ -16,6 +16,8 @@ const findProductsFromCatalog = async (req, res = response) => {
     const result = await client.search({
         index: 'catalog',
         body: {
+            from: 0,
+            size: 50,
             query: {
                 match: {
                     productName: {
