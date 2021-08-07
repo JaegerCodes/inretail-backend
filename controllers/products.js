@@ -39,8 +39,8 @@ const loadProducts = async (req, res = response) => {
 
     try {
         for (var i = 0; i <= group; i++) {
-            const start = (group * groupSize + 1);
-            const end = (parseInt(group) + 1) * groupSize;
+            const start = (i * groupSize + 1);
+            const end = (parseInt(i) + 1) * groupSize;
             await axios.get(process.env.OESCH_API_URL + "/catalog_system/pub/products/search" + "?fq=C:/" + fashionCat + "/&_from=" + start + "&_to=" + end)
                 .then(response => {
                     products = response.data
