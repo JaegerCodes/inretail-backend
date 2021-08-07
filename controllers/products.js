@@ -5,6 +5,7 @@ var axios = require('axios').default;
 const {
     Client
 } = require('@elastic/elasticsearch')
+const colorEnum = require("../utils/ColorEnum");
 
 const getProducts = async (req, res = response) => {
     let products = {}
@@ -31,16 +32,62 @@ const loadProducts = async (req, res = response) => {
     const eindex = 'catalog'
 
     const client = new Client({
-        node: process.env.ELASTIC_URL
+        node: process.env.ELASTIC_SEARCH_URL
     })
 
     try {
-        await axios.get(process.env.OESCH_API_URL + "/catalog_system/pub/products/search" + "?fq=C:/" + fashionCat + "/&_from=" + group * groupSize + 1 + "&_to=" + (group + 1) * groupSize)
+        const start = (group * groupSize + 1);
+        const end = (parseInt(group) + 1) * groupSize;
+        await axios.get(process.env.OESCH_API_URL + "/catalog_system/pub/products/search" + "?fq=C:/" + fashionCat + "/&_from=" + start + "&_to=" + end)
             .then(response => {
                 products = response.data
             })
 
-        const body = products.flatMap(doc => [{
+        let parsedList = []
+        products.forEach(element => {
+            let minPurchase = Number.MAX_SAFE_INTEGER;
+            let presentations = [];
+            element.items.forEach(item => {
+                const itemPrice = item.sellers[0].commertialOffer.Price;
+                if (minPurchase > itemPrice) {
+                    minPurchase = itemPrice;
+                }
+                let images = []
+                item.images.forEach(image => {
+                    images.push(image.imageUrl)
+                })
+                let possibleColor = null;
+                if (item.Color !== undefined && item.Color.length > 0) {
+                    possibleColor = colorEnum.colors[item.Color[0]]
+                }
+                presentations.push(
+                    {
+                        "price": itemPrice,
+                        "color": possibleColor === undefined ? colorEnum.colors.Plomo : possibleColor,
+                        "size": item.Talla === undefined ? null : item.Talla[0],
+                        "stock": item.sellers[0].AvailableQuantity,
+                        "imageUrls": images
+                    }
+                )
+            })
+            parsedList.push({
+                "productId": element.productId,
+                "productName": element.productName,
+                "minPurchaseAmount": minPurchase,
+                "outfitPart": "body",
+                "presentations": presentations,
+                "outfitItems": [
+                    {
+                        "productId": null,
+                        "productName": null,
+                        "thumbnailImage": null,
+                        "price": null
+                    }
+                ]
+            })
+        })
+
+        const body = parsedList.flatMap(doc => [{
             index: {
                 _index: eindex
             }
@@ -83,6 +130,7 @@ const loadProducts = async (req, res = response) => {
         console.log(count)
 
     } catch (err) {
+        console.log("Error", err);
         res.json({
             error: err
         })
