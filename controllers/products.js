@@ -10,15 +10,15 @@ const textUtils = require("../utils/TextUtils");
 const productsInfo = require("../utils/productsInfo")
 
 const getOutfit = (productId) => {
-    if(productsInfo && productsInfo.outfitItems){
+    if (productsInfo && productsInfo.outfitItems) {
         for (let group of productsInfo.outfitItems) {
             for (let id of group) {
-                if(id===productId)
+                if (id === productId)
                     return group
             }
         }
     }
-    return []
+    return ""
 }
 
 
@@ -26,7 +26,7 @@ const getProducts = async (req, res = response) => {
     let products = {}
     const {
         category = 0,
-            group = 0
+        group = 0
     } = req.query;
 
     const groupSize = 50
@@ -114,18 +114,9 @@ const loadProducts = async (req, res = response) => {
                     "outfitPart": textUtils.removeDiacritics(textUtils.getFirstWord(element.productName)),
                     "presentations": presentations,
                     "outfitItems": getOutfit(element.productId)
-                    /*
-                    "outfitItems": [
-                        {
-                            "productId": null,
-                            "productName": null,
-                            "thumbnailImage": null,
-                            "price": null
-                        }
-                    ]*/
                 })
             })
-            
+
 
             const body = parsedList.flatMap(doc => [{
                 index: {
@@ -160,6 +151,7 @@ const loadProducts = async (req, res = response) => {
                         })
                     }
                 })
+                console.log(erroredDocuments);
             }
         }
 
@@ -167,7 +159,8 @@ const loadProducts = async (req, res = response) => {
             res.status(500).json("Error requesting the information");
         } else {
             res.status(200).json({
-                "status": "inserted & updated "});
+                "status": "inserted & updated "
+            });
         }
 
     } catch (err) {
@@ -176,7 +169,7 @@ const loadProducts = async (req, res = response) => {
             error: err
         })
     }
-    
+
 }
 
 module.exports = {
