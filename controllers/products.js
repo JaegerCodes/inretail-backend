@@ -6,20 +6,54 @@ const {
     Client
 } = require('@elastic/elasticsearch')
 const colorEnum = require("../utils/ColorEnum");
+const textUtils = require("../utils/TextUtils");
+const productsInfo = require("../utils/productsInfo")
+
+const getOutfit = (productId) => {
+    if(productsInfo && productsInfo.outfitItems){
+        for (let group of productsInfo.outfitItems) {
+            for (let id of group) {
+                if(id===productId)
+                    return group
+            }
+        }
+    }
+    return []
+}
+
 
 const getProducts = async (req, res = response) => {
     let products = {}
-    await axios.get(process.env.OESCH_API_URL + "/catalog_system/pub/products/search")
-        .then(response => {
-            products = response.data
-        })
-        .catch(error => {
-            res.status(500)
-            console.error(error)
-        });
+    const {
+        category = 0,
+            group = 0
+    } = req.query;
 
-    res.json(products)
+    const groupSize = 50
+
+    try {
+        const start = (group * groupSize + 1);
+        const end = (parseInt(group) + 1) * groupSize;
+        await axios.get(process.env.OESCH_API_URL + "/catalog_system/pub/products/search" + "?" + "fq=C:/" + category + "/" + "&_from=" + start + "&_to=" + end)
+            .then(response => {
+                products = response.data
+            })
+    } catch (error) {
+        res.status(500)
+        console.error(error)
+    }
+
+    res.json(products.map(
+        (e) => {
+            return {
+                productId: e.productId,
+                productName: e.productName,
+                outfitPart: textUtils.removeDiacritics(textUtils.getFirstWord(e.productName))
+            }
+        }
+    ))
 }
+
 
 const loadProducts = async (req, res = response) => {
     let products = []
@@ -60,31 +94,30 @@ const loadProducts = async (req, res = response) => {
                 if (item.Color !== undefined && item.Color.length > 0) {
                     possibleColor = colorEnum.colors[item.Color[0]]
                 }
-                presentations.push(
-                    {
-                        "price": itemPrice,
-                        "color": possibleColor === undefined ? colorEnum.colors.Plomo : possibleColor,
-                        "size": item.Talla === undefined ? null : item.Talla[0],
-                        "stock": item.sellers[0].AvailableQuantity,
-                        "imageUrls": images
-                    }
-                )
+                presentations.push({
+                    "price": itemPrice,
+                    "color": possibleColor === undefined ? colorEnum.colors.Plomo : possibleColor,
+                    "size": item.Talla === undefined ? null : item.Talla[0],
+                    "stock": item.sellers[0].AvailableQuantity,
+                    "imageUrls": images
+                })
             })
             parsedList.push({
                 "productId": element.productId,
                 "productName": element.productName,
                 "minPurchaseAmount": minPurchase,
-                "outfitPart": "body",
+                "outfitPart": textUtils.removeDiacritics(textUtils.getFirstWord(element.productName)),
                 "presentations": presentations,
-                "outfitItems": [
-                    {
-                        "productId": null,
-                        "productName": null,
-                        "thumbnailImage": null,
-                        "price": null
-                    }
-                ]
+                "outfitItems": getOutfit(element.productId)
+                /*
+                "outfitItems": [{
+                    "productId": null,
+                    "productName": null,
+                    "thumbnailImage": null,
+                    "price": null
+                }]*/
             })
+
         })
 
         const body = parsedList.flatMap(doc => [{
@@ -135,13 +168,7 @@ const loadProducts = async (req, res = response) => {
             error: err
         })
     }
-    /*
-        res.json(products.map((e) => {
-            return {
-                product: e.productName,
-                categoryId: e.categoriesIds[0]
-            }
-        }))*/
+
 }
 
 module.exports = {
