@@ -56,6 +56,7 @@ const dashboardProducts = async (req, res = response) => {
     let parsedResult = parseResult(result);
     res.json(parsedResult);
 }
+
 const findProductById = async (req, res = response) => {
     const params = req.params;
     const productId = params.productId;

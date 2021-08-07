@@ -2,7 +2,8 @@ const {Router} = require('express');
 
 const {
     getProducts,
-    loadProducts
+    loadProducts,
+    loadProductsRecursive
 } = require('../controllers/products');
 
 const {
