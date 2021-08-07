@@ -8,7 +8,8 @@ class Server {
         this.port = process.env.PORT;
 
         this.paths = {
-            index: '/health'
+            index: '/health',
+            products: '/products'
         }
 
         // Middlewares
@@ -33,6 +34,7 @@ class Server {
 
     routes() {
         this.app.use( this.paths.index, require('../routes/index'));
+        this.app.use( this.paths.products, require('../routes/products'));
     }
 
     listen() {
