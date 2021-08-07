@@ -9,6 +9,7 @@ const {
     response
 } = require('express');
 require('../utils/ColorEnum');
+
 const parseResult = (result) => {
     let parsedResult = [];
     const searchHits = result.body.hits.hits;
@@ -17,6 +18,37 @@ const parseResult = (result) => {
     });
     return parsedResult;
 }
+
+const parseSuggestionWords = (result) => {
+    let parsedResult = [];
+    const similarWords = result.body.suggest.spanish_suggester;
+    similarWords.forEach(element => {
+        parsedResult.push(element.options);
+    });
+    return parsedResult;
+}
+
+const suggestProductByName = async (req, res = response) => {
+    const {searchWord} = req.query;
+
+    const result = await client.search({
+        index: 'catalog',
+        body: {
+            suggest: {
+                spanish_suggester: {
+                    text: searchWord,
+                    term: {
+                        analyzer: "spanish_analyzer",
+                        field: "productName"
+                    }
+                }
+            }
+        }
+    })
+
+    let parsedResult = parseSuggestionWords(result);
+    res.json(parsedResult);
+};
 
 const findProductsFromCatalog = async (req, res = response) => {
 
@@ -78,8 +110,10 @@ const findProductById = async (req, res = response) => {
     let parsedResult = parseResult(result);
     res.json(parsedResult);
 };
+
 module.exports = {
     findProductsFromCatalog,
     dashboardProducts,
+    suggestProductByName,
     findProductById
 }

@@ -143,6 +143,5 @@ const loadProducts = async (req, res = response) => {
 
 module.exports = {
     getProducts,
-    loadProducts,
-    loadProductsRecursive
+    loadProducts
 }
