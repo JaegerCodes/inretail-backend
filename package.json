@@ -1,0 +1,30 @@
+{
+  "name": "inretail-backend",
+  "version": "1.0.0",
+  "description": "inretail backend repository",
+  "main": "app.js",
+  "dependencies": {
+    "@elastic/elasticsearch": "^7.13.0",
+    "axios": "^0.21.1",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JaegerCodes/inretail-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/JaegerCodes/inretail-backend/issues"
+  },
+  "homepage": "https://github.com/JaegerCodes/inretail-backend#readme"
+}
