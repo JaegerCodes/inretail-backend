@@ -7,18 +7,67 @@ const {
 } = require('@elastic/elasticsearch')
 const colorEnum = require("../utils/ColorEnum");
 const textUtils = require("../utils/TextUtils");
-const productsInfo = require("../utils/productsInfo")
 
-const getOutfit = (productId) => {
-    if (productsInfo && productsInfo.outfitItems) {
-        for (let group of productsInfo.outfitItems) {
-            for (let id of group) {
-                if (id === productId)
-                    return group
+const getOutfit = async (productId, productName, outfitPartData, categories) => {
+    let searchQuery;
+    if (categories !== "") {
+        const possibleCategories = categories.split("/");
+        searchQuery = [{
+            match: {
+                productName: {
+                    query: productName,
+                    fuzziness: "AUTO",
+                    analyzer: "spanish_analyzer"
+                }
+            }
+        },
+            {
+                match: {
+                    categories: {
+                        query: possibleCategories.length > 2 ? possibleCategories[1] + "/" + possibleCategories[2] : possibleCategories[1],
+                    }
+                }
+            }
+        ];
+    } else {
+        searchQuery = {
+            match: {
+                productName: {
+                    query: productName,
+                    fuzziness: "AUTO",
+                    analyzer: "spanish_analyzer"
+                }
+            }
+        };
+    }
+    const client = new Client({
+        node: process.env.ELASTIC_SEARCH_URL
+    })
+    const result = await client.search({
+        index: 'catalog',
+        body: {
+            from: 0,
+            size: 4,
+            query: {
+                bool: {
+                    must: searchQuery,
+                    must_not: [
+                        {match: {outfitPart: outfitPartData}},
+                        {match: {productId: productId}}
+                    ]
+                }
             }
         }
+    })
+    const rawData = result.body.hits.hits;
+    let idList = [];
+    rawData.forEach(element => {
+        idList.push(element._source.productId);
+    });
+    if (idList.length === 0) {
+        return "";
     }
-    return ""
+    return idList;
 }
 
 
@@ -65,14 +114,15 @@ const loadProducts = async (req, res = response) => {
     const groupSize = 50
     const eIndex = 'catalog'
 
-    var existError = false;
+    let existError = false;
 
     const client = new Client({
         node: process.env.ELASTIC_SEARCH_URL
     })
 
     try {
-        for (var i = 0; i <= group; i++) {
+        for (let i = 0; i <= group; i++) {
+            console.log("Extracting data for group " + i + " out of " + group)
             const start = (i * groupSize + 1);
             const end = (parseInt(i) + 1) * groupSize;
             await axios.get(process.env.OESCH_API_URL + "/catalog_system/pub/products/search" + "?fq=C:/" + fashionCat + "/&_from=" + start + "&_to=" + end)
@@ -81,7 +131,7 @@ const loadProducts = async (req, res = response) => {
                 })
 
             let parsedList = []
-            products.forEach(element => {
+            for (const element of products) {
                 let minPurchase = Number.MAX_SAFE_INTEGER;
                 let presentations = [];
                 element.items.forEach(item => {
@@ -107,17 +157,22 @@ const loadProducts = async (req, res = response) => {
                         }
                     )
                 })
+                const categories = element.categories === undefined ? "" : element.categories[0];
+                const outfitPart = textUtils.removeDiacritics(textUtils.getFirstWord(element.productName));
                 parsedList.push({
                     "productId": element.productId,
                     "productName": element.productName,
                     "minPurchaseAmount": minPurchase,
-                    "outfitPart": textUtils.removeDiacritics(textUtils.getFirstWord(element.productName)),
+                    "outfitPart": outfitPart,
                     "presentations": presentations,
-                    "outfitItems": getOutfit(element.productId)
+                    "categories": categories,
+                    "outfitItems": await getOutfit(element.productId, element.productName, textUtils.removeDiacritics(textUtils.getFirstWord(element.productName)), categories)
                 })
+            }
+            parsedList.forEach(element => {
+                console.log(element.productId);
+                console.log(element.outfitItems);
             })
-
-
             const body = parsedList.flatMap(doc => [{
                 index: {
                     _index: eIndex
@@ -162,14 +217,12 @@ const loadProducts = async (req, res = response) => {
                 "status": "inserted & updated "
             });
         }
-
     } catch (err) {
         console.log("Error", err);
         res.json({
             error: err
         })
     }
-
 }
 
 module.exports = {
