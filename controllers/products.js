@@ -61,13 +61,22 @@ const getOutfit = async (productId, productName, outfitPartData, categories) => 
     })
     const rawData = result.body.hits.hits;
     let idList = [];
+    let urlList = [];
     rawData.forEach(element => {
         idList.push(element._source.productId);
+        urlList.push(element._source.presentations[0].imageUrls[0])
     });
-    if (idList.length === 0) {
-        return "";
+    let outfitData = {
+        "outfitIds": idList,
+        "outfitUrls": urlList
     }
-    return idList;
+    if (idList.length === 0) {
+        return {
+            "outfitIds": "",
+            "outfitUrls": ""
+        };
+    }
+    return outfitData;
 }
 
 
@@ -159,6 +168,7 @@ const loadProducts = async (req, res = response) => {
                 })
                 const categories = element.categories === undefined ? "" : element.categories[0];
                 const outfitPart = textUtils.removeDiacritics(textUtils.getFirstWord(element.productName));
+                const outfitData = await getOutfit(element.productId, element.productName, textUtils.removeDiacritics(textUtils.getFirstWord(element.productName)), categories);
                 parsedList.push({
                     "productId": element.productId,
                     "productName": element.productName,
@@ -166,7 +176,9 @@ const loadProducts = async (req, res = response) => {
                     "outfitPart": outfitPart,
                     "presentations": presentations,
                     "categories": categories,
-                    "outfitItems": await getOutfit(element.productId, element.productName, textUtils.removeDiacritics(textUtils.getFirstWord(element.productName)), categories)
+                    "outfitItems": outfitData.outfitIds,
+                    "outfitUrls": outfitData.outfitUrls,
+                    "outfitData": outfitData
                 })
             }
             parsedList.forEach(element => {
