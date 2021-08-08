@@ -39,6 +39,7 @@ const suggestProductByName = async (req, res = response) => {
                     text: searchWord,
                     term: {
                         analyzer: "spanish_analyzer",
+                        fuzziness: "AUTO",
                         field: "productName"
                     }
                 }
